@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="UTF-8">
   <title>Shared Expense App</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css">
 </head>
+
 <body class="bg-gray-100">
   <div class="container mx-auto p-4" x-data="app()" x-init="mounted()">
     <div class="mb-4 flex items-center space-x-4">
@@ -49,11 +51,18 @@
     <div class="mb-4">
       <h2 class="text-gray-700 text-lg font-bold mb-2">Balance:</h2>
       <ul class="list-disc list-inside space-y-2">
+        <li x-text="'Total amount ' + totalAmount.toFixed(2) + '€, ' + averageAmount.toFixed(2) + '€ per person'"></li>
         <template x-for="(payment, index) in payments" :key="index">
           <li x-text="'€' + payment.amount.toFixed(2) + ' from ' + payment.from + ' to ' + payment.to"></li>
         </template>
       </ul>
     </div>
+    <div class="mb-4">
+      <button type="button"
+        class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        @click="recalculateBalance">Recalculate Balance</button>
+    </div>
+
   </div>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script>
@@ -64,6 +73,8 @@
         description: '',
         expenses: [],
         payments: [],
+        totalAmount: 0, // Add this line
+        averageAmount: 0, // Add this line
 
         mounted() {
           if (localStorage.expenses) {
@@ -110,6 +121,13 @@
 
         updateLocalStorage() {
           localStorage.expenses = JSON.stringify(this.expenses);
+          localStorage.payments = JSON.stringify(this.payments);
+          localStorage.people = JSON.stringify(this.peopleList);
+        },
+
+        recalculateBalance() {
+          this.updatePayments();
+          this.updateLocalStorage(); // Update local storage with recalculated balance
         },
 
         updatePayments() {
@@ -121,11 +139,14 @@
           }
 
           for (let expense of this.expenses) {
-            balances.set(expense.payer, balances.get(expense.payer) + expense.amount);
+            balances.set(expense.payer, balances.get(expense.payer) + parseFloat(expense.amount));
           }
 
+          let totalAmount = this.expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+          let averageAmount = totalAmount / this.peopleList.length;
+
           for (let [person, balance] of balances) {
-            balances.set(person, balance - this.averageAmount);
+            balances.set(person, balance - averageAmount);
           }
 
           let debtors = [...balances.entries()].filter(([person, balance]) => balance < 0).sort((a, b) => a[1] - b[1]);
@@ -151,9 +172,13 @@
             if (debtor[1] === 0) i++; // Move to the next debtor
             if (creditor[1] === 0) j++; // Move to the next creditor
           }
+
+          this.totalAmount = totalAmount; // Set totalAmount
+          this.averageAmount = averageAmount; // Set averageAmount
         },
       }
     }
   </script>
 </body>
+
 </html>
