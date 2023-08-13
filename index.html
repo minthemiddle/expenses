@@ -86,6 +86,7 @@
           if (localStorage.people) {
             this.peopleList = JSON.parse(localStorage.people);
           }
+          this.recalculateBalance()
         },
 
         updated() {
