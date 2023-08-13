@@ -1,27 +1,24 @@
 <!DOCTYPE html>
+<html>
 <head>
   <meta charset="UTF-8">
   <title>Shared Expense App</title>
-  <!-- Import Tailwind CSS and Alpine JS from CDN -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css">
-  
 </head>
 <body class="bg-gray-100">
-  <div class="container mx-auto p-4" x-data="app()">
-    <!-- Textarea for entering and managing people -->
-    <div class="mb-4">
-      <label for="people" class="block text-gray-700 text-sm font-bold mb-2">People:</label>
-      <textarea id="people" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" rows="5" x-model="people" placeholder="Enter one person per line"></textarea>
-    </div>
-    <!-- Input fields for entering an expense -->
+  <div class="container mx-auto p-4" x-data="app()" x-init="mounted()">
     <div class="mb-4 flex items-center space-x-4">
       <div class="flex-1">
         <label for="amount" class="block text-gray-700 text-sm font-bold mb-2">Amount (€):</label>
-        <input id="amount" type="number" min="0" step="0.01" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" x-model.number="amount" placeholder="Enter the amount of the expense">
+        <input id="amount" type="number" min="0" step="0.01"
+          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          x-model.number="amount" placeholder="Enter the amount of the expense">
       </div>
       <div class="flex-1">
         <label for="payer" class="block text-gray-700 text-sm font-bold mb-2">Payer:</label>
-        <select id="payer" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" x-model="payer">
+        <select id="payer"
+          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          x-model="selectedPayer">
           <option value="" disabled selected>Select the person who paid the expense</option>
           <template x-for="(person, index) in peopleList" :key="index">
             <option x-text="person" :value="person"></option>
@@ -30,23 +27,25 @@
       </div>
       <div class="flex-1">
         <label for="description" class="block text-gray-700 text-sm font-bold mb-2">Description:</label>
-        <input id="description" type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" x-model.trim="description" placeholder="Enter a description of the expense">
+        <input id="description" type="text"
+          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          x-model.trim="description" placeholder="Enter a description of the expense">
       </div>
     </div>
-    <!-- Button for adding an expense -->
     <div class="mb-4">
-      <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" @click.prevent="addExpense">Add Expense</button>
+      <button type="button"
+        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        @click.prevent="addExpense">Add Expense</button>
     </div>
-    <!-- List of all expenses -->
     <div class="mb-4">
       <h2 class="text-gray-700 text-lg font-bold mb-2">Expenses:</h2>
       <ul class="list-disc list-inside space-y-2">
         <template x-for="(expense, index) in expenses" :key="index">
-          <li x-text="'€' + expense.amount.toFixed(2) + ' paid by ' + expense.payer + ' for ' + expense.description"></li>
+          <li x-text="'€' + expense.amount.toFixed(2) + ' paid by ' + expense.payer + ' for ' + expense.description">
+          </li>
         </template>
       </ul>
     </div>
-    <!-- Overview of who needs to pay how much to who -->
     <div class="mb-4">
       <h2 class="text-gray-700 text-lg font-bold mb-2">Balance:</h2>
       <ul class="list-disc list-inside space-y-2">
@@ -56,42 +55,40 @@
       </ul>
     </div>
   </div>
-
-  <!-- Alpine JS script for the app logic -->
-  <script src="https://cdn.jsdelivr.net/npm/alpinejs@latest"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script>
     function app() {
       return {
-        // Data properties
-        people: '', // The raw input of people
-        amount: '', // The input of amount
-        payer: '', // The input of payer
-        description: '', // The input of description
-        expenses: [], // The array of expenses
-        payments: [], // The array of payments
+        amount: '',
+        selectedPayer: '',
+        description: '',
+        expenses: [],
+        payments: [],
 
-        // Computed properties
-        get peopleList() {
-          // Return an array of trimmed and non-empty people
-          return this.people.split('\n').map(p => p.trim()).filter(p => p !== '');
-        },
-        get totalAmount() {
-          // Return the sum of all expenses
-          return this.expenses.reduce((sum, expense) => sum + expense.amount, 0);
-        },
-        get averageAmount() {
-          // Return the average amount per person
-          return this.totalAmount / this.peopleList.length;
+        mounted() {
+          if (localStorage.expenses) {
+            this.expenses = JSON.parse(localStorage.expenses);
+          }
+          if (localStorage.payments) {
+            this.payments = JSON.parse(localStorage.payments);
+          }
+          if (localStorage.people) {
+            this.peopleList = JSON.parse(localStorage.people);
+          }
         },
 
-        // Methods
+        updated() {
+          localStorage.expenses = JSON.stringify(this.expenses);
+          localStorage.payments = JSON.stringify(this.payments);
+          localStorage.people = JSON.stringify(this.peopleList);
+        },
+
         addExpense() {
-          // Validate the input fields
           if (this.amount <= 0) {
             alert('Please enter a positive amount');
             return;
           }
-          if (this.payer === '') {
+          if (this.selectedPayer === '') {
             alert('Please select a payer');
             return;
           }
@@ -99,54 +96,62 @@
             alert('Please enter a description');
             return;
           }
-          // Add the expense to the array
           this.expenses.push({
-            amount: this.amount,
-            payer: this.payer,
+            amount: parseFloat(this.amount), // Parse float
+            payer: this.selectedPayer,
             description: this.description
           });
-          // Clear the input fields
           this.amount = '';
-          this.payer = '';
+          this.selectedPayer = '';
           this.description = '';
-          // Update the payments
           this.updatePayments();
+          this.updateLocalStorage();
         },
+
+        updateLocalStorage() {
+          localStorage.expenses = JSON.stringify(this.expenses);
+        },
+
         updatePayments() {
-          // Reset the payments array
-          this.payments = [];
-          // Create a map of person to balance
+          this.payments = []; // Reset payments
+
           let balances = new Map();
           for (let person of this.peopleList) {
             balances.set(person, 0);
           }
-          // Update the balances based on the expenses
+
           for (let expense of this.expenses) {
             balances.set(expense.payer, balances.get(expense.payer) + expense.amount);
           }
+
           for (let [person, balance] of balances) {
             balances.set(person, balance - this.averageAmount);
           }
-          // Find the payments that balance the debts and credits
+
           let debtors = [...balances.entries()].filter(([person, balance]) => balance < 0).sort((a, b) => a[1] - b[1]);
           let creditors = [...balances.entries()].filter(([person, balance]) => balance > 0).sort((a, b) => b[1] - a[1]);
+
           let i = 0; // Index for debtors
           let j = 0; // Index for creditors
+
           while (i < debtors.length && j < creditors.length) {
             let debtor = debtors[i];
             let creditor = creditors[j];
-            let amount = Math.min(-debtor[1], creditor[1]); // The minimum of absolute values
+            let amount = Math.min(-debtor[1], creditor[1]);
+
             this.payments.push({
               from: debtor[0],
               to: creditor[0],
               amount: amount
             });
+
             debtor[1] += amount;
             creditor[1] -= amount;
+
             if (debtor[1] === 0) i++; // Move to the next debtor
             if (creditor[1] === 0) j++; // Move to the next creditor
           }
-        }
+        },
       }
     }
   </script>
